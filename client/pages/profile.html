@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile | Personal Expense Tracker</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/api.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">XP</div>
+        <span class="brand-name">ExpTracker</span>
+      </div>
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="dashboard.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="transactions.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <span>Transactions</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="categories.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span>Categories</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="profile.html" class="nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+            <span>Profile</span>
+          </a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="theme-toggle-btn">Dark Mode</button>
+        <div class="user-badge">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-info">
+            <span class="user-name" id="user-name">User Name</span>
+            <span class="user-email" id="user-email">user@email.com</span>
+          </div>
+        </div>
+        <a href="#" id="logout-btn" class="nav-link" style="margin-top: 0.5rem; border: 1px solid var(--border-color)">
+          <svg viewBox="0 0 24 24" style="stroke: currentColor;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="header-container">
+        <div class="page-title-section">
+          <h1 class="page-title">User Profile</h1>
+          <p class="page-subtitle">Manage your account information and preferences</p>
+        </div>
+      </div>
+
+      <div class="profile-grid">
+        <!-- Profile Side Card -->
+        <div class="profile-sidebar glass-panel">
+          <div class="profile-avatar-large" id="profile-avatar-large">U</div>
+          <div>
+            <h3 style="font-weight: 700; font-size: 1.15rem;" id="profile-name-title">User Name</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;" id="profile-email-subtitle">user@email.com</p>
+          </div>
+          <div class="profile-details-list">
+            <div class="profile-detail-item">
+              <span class="profile-detail-label">Status</span>
+              <span class="profile-detail-value" style="color: var(--success);">Active</span>
+            </div>
+            <div class="profile-detail-item">
+              <span class="profile-detail-label">Joined</span>
+              <span class="profile-detail-value" id="profile-joined-date">Jan 01, 2026</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forms Container -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <!-- Account Details Form -->
+          <div class="dashboard-panel glass-panel">
+            <h2 class="panel-title">Account Information</h2>
+            <form id="update-profile-form">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label for="profile-name">Full Name</label>
+                  <input type="text" id="profile-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label for="profile-email">Email Address</label>
+                  <input type="email" id="profile-email" class="form-control" required>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="profile-budget">Monthly Budget Limit ($)</label>
+                <input type="number" id="profile-budget" class="form-control" placeholder="0.00" step="0.01" min="0">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Set to 0 or leave empty to disable budget alerts.</span>
+              </div>
+              
+              <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Save Profile Settings</button>
+            </form>
+          </div>
+
+          <!-- Change Password Form -->
+          <div class="dashboard-panel glass-panel">
+            <h2 class="panel-title">Security & Password</h2>
+            <form id="change-password-form">
+              <div class="form-group">
+                <label for="current-password">Current Password</label>
+                <input type="password" id="current-password" class="form-control" placeholder="••••••••" required minlength="8">
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label for="new-password">New Password</label>
+                  <input type="password" id="new-password" class="form-control" placeholder="••••••••" required minlength="8">
+                </div>
+                <div class="form-group">
+                  <label for="confirm-new-password">Confirm New Password</label>
+                  <input type="password" id="confirm-new-password" class="form-control" placeholder="••••••••" required minlength="8">
+                </div>
+              </div>
+              
+              <button type="submit" class="btn btn-secondary" style="margin-top: 1rem;">Change Password</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/profile.js"></script>
+</body>
+</html>

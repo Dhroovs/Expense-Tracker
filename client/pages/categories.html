@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categories | Personal Expense Tracker</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/api.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">XP</div>
+        <span class="brand-name">ExpTracker</span>
+      </div>
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="dashboard.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="transactions.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <span>Transactions</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="categories.html" class="nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span>Categories</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="profile.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+            <span>Profile</span>
+          </a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="theme-toggle-btn">Dark Mode</button>
+        <div class="user-badge">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-info">
+            <span class="user-name" id="user-name">User Name</span>
+            <span class="user-email" id="user-email">user@email.com</span>
+          </div>
+        </div>
+        <a href="#" id="logout-btn" class="nav-link" style="margin-top: 0.5rem; border: 1px solid var(--border-color)">
+          <svg viewBox="0 0 24 24" style="stroke: currentColor;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="header-container">
+        <div class="page-title-section">
+          <h1 class="page-title">Categories</h1>
+          <p class="page-subtitle">Organize your expenses and classify your cash flows</p>
+        </div>
+      </div>
+
+      <div class="analytics-grid" style="grid-template-columns: 1fr 2fr;">
+        <!-- Add Category Panel -->
+        <div class="dashboard-panel glass-panel" style="height: fit-content;">
+          <h2 class="panel-title">Add New Category</h2>
+          <form id="create-category-form">
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label for="new-category-name">Category Name</label>
+              <input type="text" id="new-category-name" class="form-control" placeholder="e.g. Subscriptions" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Create Category</button>
+          </form>
+        </div>
+
+        <!-- Categories List Grid -->
+        <div class="dashboard-panel glass-panel">
+          <h2 class="panel-title">My Categories</h2>
+          <div class="category-grid" id="category-cards-grid">
+            <!-- Dynamic Category cards go here -->
+            <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 2rem 0; grid-column: 1 / -1;">
+              Loading categories...
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Edit Category Modal -->
+  <div class="modal-backdrop" id="edit-category-modal">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Category</h3>
+        <button class="modal-close" id="close-edit-category-modal">&times;</button>
+      </div>
+      <form id="edit-category-form">
+        <input type="hidden" id="edit-category-id" value="">
+        <div class="form-group">
+          <label for="edit-category-name">Category Name</label>
+          <input type="text" id="edit-category-name" class="form-control" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-edit-category">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/categories.js"></script>
+</body>
+</html>

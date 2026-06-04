@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transactions | Personal Expense Tracker</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/api.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">XP</div>
+        <span class="brand-name">ExpTracker</span>
+      </div>
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="dashboard.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="transactions.html" class="nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <span>Transactions</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="categories.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span>Categories</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="profile.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+            <span>Profile</span>
+          </a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="theme-toggle-btn">Dark Mode</button>
+        <div class="user-badge">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-info">
+            <span class="user-name" id="user-name">User Name</span>
+            <span class="user-email" id="user-email">user@email.com</span>
+          </div>
+        </div>
+        <a href="#" id="logout-btn" class="nav-link" style="margin-top: 0.5rem; border: 1px solid var(--border-color)">
+          <svg viewBox="0 0 24 24" style="stroke: currentColor;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="header-container">
+        <div class="page-title-section">
+          <h1 class="page-title">Transactions</h1>
+          <p class="page-subtitle">View, search, filter, and export your cash flows</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-secondary" id="export-csv-btn">
+            <span>Export CSV</span>
+          </button>
+          <button class="btn btn-primary" id="open-transaction-modal-btn">
+            <span>+ Add Transaction</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters & Sorting Bar -->
+      <div class="filters-bar">
+        <div class="search-input-wrapper">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="search-input" class="form-control" placeholder="Search by title, notes, category...">
+        </div>
+
+        <select id="type-filter" class="form-control filter-select">
+          <option value="">All Types</option>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+
+        <select id="category-filter" class="form-control filter-select">
+          <option value="">All Categories</option>
+          <!-- Categories loaded dynamically -->
+        </select>
+
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <input type="date" id="start-date" class="form-control filter-date" placeholder="Start Date">
+          <span style="color: var(--text-secondary); font-size: 0.85rem;">to</span>
+          <input type="date" id="end-date" class="form-control filter-date" placeholder="End Date">
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <select id="sort-by" class="form-control filter-select" style="min-width: 110px;">
+            <option value="transaction_date">Sort: Date</option>
+            <option value="amount">Sort: Amount</option>
+            <option value="title">Sort: Title</option>
+            <option value="created_at">Sort: Created</option>
+          </select>
+          <select id="sort-order" class="form-control filter-select" style="min-width: 80px;">
+            <option value="DESC">Desc</option>
+            <option value="ASC">Asc</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Transactions Data Table -->
+      <div class="table-responsive glass-panel">
+        <table class="data-table" id="transactions-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Notes</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-table-body">
+            <!-- Dynamic rows injected here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="pagination-container">
+        <div class="pagination-info" id="pagination-info">
+          Showing 0 to 0 of 0 entries
+        </div>
+        <div class="pagination-buttons">
+          <button class="btn btn-secondary btn-icon-only" id="prev-page-btn" disabled>&lt;</button>
+          <button class="btn btn-secondary btn-icon-only" id="next-page-btn" disabled>&gt;</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Transaction Modal -->
+  <div class="modal-backdrop" id="transaction-modal">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">Add Transaction</h3>
+        <button class="modal-close" id="close-transaction-modal">&times;</button>
+      </div>
+      <form id="transaction-form">
+        <!-- Hidden input to track edit state -->
+        <input type="hidden" id="edit-transaction-id" value="">
+
+        <div class="form-group">
+          <label for="title-input">Title</label>
+          <input type="text" id="title-input" class="form-control" placeholder="e.g. Electricity Bill" required>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="amount-input">Amount ($)</label>
+            <input type="number" id="amount-input" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+          </div>
+          <div class="form-group">
+            <label for="type-input">Type</label>
+            <select id="type-input" class="form-control" required>
+              <option value="expense" selected>Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="category-input">Category</label>
+            <select id="category-input" class="form-control" required>
+              <!-- Dynamic Categories -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="date-input">Date</label>
+            <input type="date" id="date-input" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="notes-input">Notes (Optional)</label>
+          <textarea id="notes-input" class="form-control" rows="2" placeholder="Describe the transaction..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-transaction">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-transaction-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/transactions.js"></script>
+</body>
+</html>

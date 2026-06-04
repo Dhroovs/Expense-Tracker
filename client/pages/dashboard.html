@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Personal Expense Tracker</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/api.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">XP</div>
+        <span class="brand-name">ExpTracker</span>
+      </div>
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="dashboard.html" class="nav-link active">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="transactions.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <span>Transactions</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="categories.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span>Categories</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="profile.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+            <span>Profile</span>
+          </a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <button id="theme-toggle" class="theme-toggle-btn">Dark Mode</button>
+        <div class="user-badge">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-info">
+            <span class="user-name" id="user-name">User Name</span>
+            <span class="user-email" id="user-email">user@email.com</span>
+          </div>
+        </div>
+        <a href="#" id="logout-btn" class="nav-link" style="margin-top: 0.5rem; border: 1px solid var(--border-color)">
+          <svg viewBox="0 0 24 24" style="stroke: currentColor;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <div class="header-container">
+        <div class="page-title-section">
+          <h1 class="page-title" id="welcome-message">Hello, User</h1>
+          <p class="page-subtitle" id="dashboard-date">Overview of your financial standings</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="open-add-transaction-modal">
+            <span>+ Add Transaction</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Financial Metrics Grid -->
+      <div class="metrics-grid">
+        <!-- Balance Card -->
+        <div class="metric-card glass-panel balance">
+          <div class="metric-header">
+            <span class="metric-title">Total Balance</span>
+            <div class="metric-icon">💵</div>
+          </div>
+          <span class="metric-value" id="total-balance">$0.00</span>
+          <span class="metric-footer">Net financial worth</span>
+        </div>
+
+        <!-- Income Card -->
+        <div class="metric-card glass-panel income">
+          <div class="metric-header">
+            <span class="metric-title">Total Income</span>
+            <div class="metric-icon">📈</div>
+          </div>
+          <span class="metric-value" id="total-income">$0.00</span>
+          <span class="metric-footer">Total earnings to date</span>
+        </div>
+
+        <!-- Expense Card -->
+        <div class="metric-card glass-panel expense">
+          <div class="metric-header">
+            <span class="metric-title">Total Expenses</span>
+            <div class="metric-icon">📉</div>
+          </div>
+          <span class="metric-value" id="total-expenses">$0.00</span>
+          <span class="metric-footer">Total expenditures to date</span>
+        </div>
+
+        <!-- Budget Card -->
+        <div class="metric-card glass-panel budget">
+          <div class="metric-header">
+            <span class="metric-title">Budget Limit</span>
+            <div class="metric-icon">🛡️</div>
+          </div>
+          <span class="metric-value" id="monthly-budget">$0.00</span>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="budget-progress-bar" style="width: 0%;"></div>
+          </div>
+          <span class="metric-footer" id="budget-footer-text">Limit set for this month</span>
+        </div>
+      </div>
+
+      <!-- Analytics Charts Grid -->
+      <div class="analytics-grid">
+        <!-- Line Chart / Trends -->
+        <div class="dashboard-panel glass-panel">
+          <h2 class="panel-title">Daily Spending Trend (Current Month)</h2>
+          <div class="chart-wrapper">
+            <canvas id="spendingTrendChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Doughnut Chart / Category Breakdown -->
+        <div class="dashboard-panel glass-panel">
+          <h2 class="panel-title">Category Breakdown</h2>
+          <div class="chart-wrapper">
+            <canvas id="categoryBreakdownChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
+        <!-- Bar Chart / Income vs Expense Comparison -->
+        <div class="dashboard-panel glass-panel">
+          <h2 class="panel-title">Income vs Expenses (Last 6 Months)</h2>
+          <div class="chart-wrapper">
+            <canvas id="monthlyComparisonChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="dashboard-panel glass-panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Recent Transactions</h2>
+            <a href="transactions.html" style="font-size: 0.85rem; color: var(--primary); font-weight: 600; text-decoration: underline;">View All</a>
+          </div>
+          <div class="recent-list" id="recent-transactions-list">
+            <!-- Dynamic rows go here -->
+            <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 2rem 0;">No recent transactions found.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Transaction Modal -->
+  <div class="modal-backdrop" id="add-transaction-modal">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Transaction</h3>
+        <button class="modal-close" id="close-add-transaction-modal">&times;</button>
+      </div>
+      <form id="add-transaction-form">
+        <div class="form-group">
+          <label for="modal-title-input">Title</label>
+          <input type="text" id="modal-title-input" class="form-control" placeholder="e.g. Grocery Store" required>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="modal-amount-input">Amount ($)</label>
+            <input type="number" id="modal-amount-input" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+          </div>
+          <div class="form-group">
+            <label for="modal-type-input">Type</label>
+            <select id="modal-type-input" class="form-control" required>
+              <option value="expense" selected>Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="modal-category-input">Category</label>
+            <select id="modal-category-input" class="form-control" required>
+              <!-- Dynamic Categories -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="modal-date-input">Date</label>
+            <input type="date" id="modal-date-input" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="modal-notes-input">Notes (Optional)</label>
+          <textarea id="modal-notes-input" class="form-control" rows="2" placeholder="Describe the transaction..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-add-transaction">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

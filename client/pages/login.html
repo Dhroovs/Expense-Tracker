@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Personal Expense Tracker</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/api.js"></script>
+</head>
+<body class="auth-page">
+  <div class="auth-card glass-panel">
+    <div class="auth-header">
+      <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
+        <div class="brand-icon">XP</div>
+      </div>
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-subtitle">Log in to manage your personal finances</p>
+    </div>
+    
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" class="form-control" placeholder="you@example.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" class="form-control" placeholder="••••••••" required minlength="8">
+      </div>
+      
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; padding: 0.8rem;">
+        Log In
+      </button>
+    </form>
+    
+    <div class="auth-footer">
+      <p>Don't have an account? <a href="register.html" class="auth-link">Register here</a></p>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Expense Tracker</title>
+  <script src="/js/api.js"></script>
+  <script>
+    // Direct entry routing
+    const token = getToken();
+    if (token) {
+      window.location.replace('/pages/dashboard.html');
+    } else {
+      window.location.replace('/pages/login.html');
+    }
+  </script>
+</head>
+<body style="background: #f1f5f9; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
+  <div style="text-align: center; color: #475569;">
+    <h3>Redirecting...</h3>
+  </div>
+</body>
+</html>
