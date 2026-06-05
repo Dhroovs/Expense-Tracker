@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transactions | Personal Expense Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   <script src="/js/api.js"></script>
 </head>
@@ -35,6 +38,12 @@
           </a>
         </li>
         <li class="nav-item">
+          <a href="history.html" class="nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>History</span>
+          </a>
+        </li>
+        <li class="nav-item">
           <a href="profile.html" class="nav-link">
             <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
             <span>Profile</span>
@@ -50,7 +59,7 @@
             <span class="user-email" id="user-email">user@email.com</span>
           </div>
         </div>
-        <a href="#" id="logout-btn" class="nav-link" style="margin-top: 0.5rem; border: 1px solid var(--border-color)">
+        <a href="#" id="logout-btn" class="nav-link" style="margin-top: 0.5rem; border: 1px solid var(--border)">
           <svg viewBox="0 0 24 24" style="stroke: currentColor;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
           <span>Logout</span>
         </a>
@@ -69,7 +78,7 @@
             <span>Export CSV</span>
           </button>
           <button class="btn btn-primary" id="open-transaction-modal-btn">
-            <span>+ Add Transaction</span>
+            <span>+ Add Transaction</span><span class="kbd-badge">alt + n</span>
           </button>
         </div>
       </div>
@@ -78,7 +87,7 @@
       <div class="filters-bar">
         <div class="search-input-wrapper">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          <input type="text" id="search-input" class="form-control" placeholder="Search by title, notes, category...">
+          <input type="text" id="search-input" class="form-control" placeholder="Search by title, notes, category... (press /)">
         </div>
 
         <select id="type-filter" class="form-control filter-select">
@@ -194,7 +203,7 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="cancel-transaction">Cancel</button>
+          <button type="button" class="btn btn-secondary" id="cancel-transaction">Cancel<span class="kbd-badge">esc</span></button>
           <button type="submit" class="btn btn-primary" id="save-transaction-btn">Save</button>
         </div>
       </form>

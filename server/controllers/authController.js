@@ -78,7 +78,8 @@ exports.register = async (req, res) => {
       user: {
         id: newUser.id,
         name: newUser.name,
-        email: newUser.email
+        email: newUser.email,
+        theme: 'light'
       }
     });
 
@@ -99,7 +100,7 @@ exports.login = async (req, res) => {
 
   try {
     const userResult = await db.query(
-      'SELECT id, name, email, password_hash FROM users WHERE email = $1',
+      'SELECT id, name, email, password_hash, theme FROM users WHERE email = $1',
       [email.toLowerCase().trim()]
     );
 
@@ -125,7 +126,8 @@ exports.login = async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        theme: user.theme
       }
     });
 
@@ -138,7 +140,7 @@ exports.login = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const userResult = await db.query(
-      'SELECT id, name, email, monthly_budget, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, monthly_budget, theme, created_at FROM users WHERE id = $1',
       [req.user.id]
     );
 
@@ -212,7 +214,7 @@ exports.updateProfile = async (req, res) => {
 
     // Update user
     const updateResult = await client.query(
-      'UPDATE users SET name = $1, email = $2, monthly_budget = $3, password_hash = $4 WHERE id = $5 RETURNING id, name, email, monthly_budget',
+      'UPDATE users SET name = $1, email = $2, monthly_budget = $3, password_hash = $4 WHERE id = $5 RETURNING id, name, email, monthly_budget, theme',
       [name.trim(), email.toLowerCase().trim(), budget, passwordHash, userId]
     );
 
@@ -241,3 +243,31 @@ exports.updateProfile = async (req, res) => {
     return res.status(500).json({ error: 'Internal server error updating profile.' });
   }
 };
+
+exports.updateTheme = async (req, res) => {
+  const { theme } = req.body;
+
+  if (!theme || (theme !== 'light' && theme !== 'dark')) {
+    return res.status(400).json({ error: 'Theme preference must be "light" or "dark".' });
+  }
+
+  try {
+    const result = await db.query(
+      'UPDATE users SET theme = $1 WHERE id = $2 RETURNING theme',
+      [theme, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.status(200).json({
+      message: 'Theme updated successfully.',
+      theme: result.rows[0].theme
+    });
+  } catch (err) {
+    console.error('Update theme error:', err);
+    return res.status(500).json({ error: 'Internal server error updating theme.' });
+  }
+};
+

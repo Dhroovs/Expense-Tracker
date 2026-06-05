@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure theme column exists on users table (for migrations)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS theme VARCHAR(10) DEFAULT 'light';
+
 -- Create Categories table
 CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
@@ -29,3 +32,18 @@ CREATE TABLE IF NOT EXISTS transactions (
     transaction_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create Audit Logs table
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    transaction_id INTEGER,
+    action VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL,
+    type VARCHAR(10) NOT NULL,
+    details TEXT,
+    performed_by VARCHAR(100) NOT NULL,
+    performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+

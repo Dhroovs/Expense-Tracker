@@ -184,9 +184,18 @@ exports.createTransaction = async (req, res) => {
       [userId, category_id, title.trim(), parsedAmount, type, notes ? notes.trim() : null, transaction_date]
     );
 
+    const transaction = insertResult.rows[0];
+
+    // Log create action
+    await db.query(
+      `INSERT INTO audit_logs (user_id, transaction_id, action, title, amount, type, details, performed_by)
+       VALUES ($1, $2, 'CREATE', $3, $4, $5, $6, $7)`,
+      [userId, transaction.id, transaction.title, transaction.amount, transaction.type, 'Transaction created.', req.user.name]
+    );
+
     return res.status(201).json({
       message: 'Transaction created successfully.',
-      transaction: insertResult.rows[0]
+      transaction
     });
 
   } catch (err) {
@@ -223,9 +232,9 @@ exports.updateTransaction = async (req, res) => {
   }
 
   try {
-    // Verify ownership of transaction
+    // Verify ownership of transaction (retrieve details for change analysis)
     const transactionCheck = await db.query(
-      'SELECT id FROM transactions WHERE id = $1 AND user_id = $2',
+      'SELECT id, title, amount, type, transaction_date, notes FROM transactions WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
 
@@ -243,6 +252,8 @@ exports.updateTransaction = async (req, res) => {
       return res.status(400).json({ error: 'Invalid category selection.' });
     }
 
+    const oldTx = transactionCheck.rows[0];
+
     const updateResult = await db.query(
       `UPDATE transactions
        SET category_id = $1, title = $2, amount = $3, type = $4, notes = $5, transaction_date = $6
@@ -251,9 +262,30 @@ exports.updateTransaction = async (req, res) => {
       [category_id, title.trim(), parsedAmount, type, notes ? notes.trim() : null, transaction_date, id, userId]
     );
 
+    const newTx = updateResult.rows[0];
+
+    // Build changes log
+    const changes = [];
+    if (oldTx.title !== newTx.title) changes.push(`title: "${oldTx.title}" -> "${newTx.title}"`);
+    if (parseFloat(oldTx.amount) !== parseFloat(newTx.amount)) changes.push(`amount: $${oldTx.amount} -> $${newTx.amount}`);
+    if (oldTx.type !== newTx.type) changes.push(`type: "${oldTx.type}" -> "${newTx.type}"`);
+    
+    const oldDateStr = new Date(oldTx.transaction_date).toISOString().split('T')[0];
+    const newDateStr = new Date(newTx.transaction_date).toISOString().split('T')[0];
+    if (oldDateStr !== newDateStr) changes.push(`date: ${oldDateStr} -> ${newDateStr}`);
+
+    const details = changes.length > 0 ? `Updated: ${changes.join(', ')}` : 'Updated details (no values changed).';
+
+    // Log update action
+    await db.query(
+      `INSERT INTO audit_logs (user_id, transaction_id, action, title, amount, type, details, performed_by)
+       VALUES ($1, $2, 'UPDATE', $3, $4, $5, $6, $7)`,
+      [userId, newTx.id, newTx.title, newTx.amount, newTx.type, details, req.user.name]
+    );
+
     return res.status(200).json({
       message: 'Transaction updated successfully.',
-      transaction: updateResult.rows[0]
+      transaction: newTx
     });
 
   } catch (err) {
@@ -267,9 +299,9 @@ exports.deleteTransaction = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Verify ownership of transaction
+    // Verify ownership of transaction (retrieve details for audit logging)
     const transactionCheck = await db.query(
-      'SELECT id FROM transactions WHERE id = $1 AND user_id = $2',
+      'SELECT id, title, amount, type, transaction_date, notes FROM transactions WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
 
@@ -277,9 +309,18 @@ exports.deleteTransaction = async (req, res) => {
       return res.status(404).json({ error: 'Transaction not found.' });
     }
 
+    const deletedTx = transactionCheck.rows[0];
+
     await db.query(
       'DELETE FROM transactions WHERE id = $1 AND user_id = $2',
       [id, userId]
+    );
+
+    // Log delete action
+    await db.query(
+      `INSERT INTO audit_logs (user_id, transaction_id, action, title, amount, type, details, performed_by)
+       VALUES ($1, $2, 'DELETE', $3, $4, $5, $6, $7)`,
+      [userId, deletedTx.id, deletedTx.title, deletedTx.amount, deletedTx.type, `Deleted transaction. Notes: ${deletedTx.notes || 'none'}`, req.user.name]
     );
 
     return res.status(200).json({

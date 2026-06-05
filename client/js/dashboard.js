@@ -2,9 +2,66 @@ let spendingChart = null;
 let categoryChart = null;
 let comparisonChart = null;
 
+// Premium Numeric Count-Up Animation
+function animateValue(id, targetValue, duration = 800) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  
+  const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+  const start = 0;
+  const end = parseFloat(targetValue) || 0;
+  if (end === 0) {
+    el.textContent = formatter.format(0);
+    return;
+  }
+  
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    // Easing outQuad: f(t) = t*(2-t)
+    const easedProgress = progress * (2 - progress);
+    const current = easedProgress * (end - start) + start;
+    el.textContent = formatter.format(current);
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    }
+  };
+  window.requestAnimationFrame(step);
+}
+
+// Global Keyboard Shortcuts for Dashboard
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('add-transaction-modal');
+    
+    // Alt + N: Open Quick Add Modal
+    if (e.altKey && e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      const openBtn = document.getElementById('open-add-transaction-modal');
+      if (openBtn) openBtn.click();
+    }
+    
+    // Esc: Close Modal
+    if (e.key === 'Escape') {
+      if (modal && modal.classList.contains('show')) {
+        const closeBtn = document.getElementById('close-add-transaction-modal') || document.getElementById('cancel-add-transaction');
+        if (closeBtn) closeBtn.click();
+      }
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Initialize general app shell utilities (auth check, theme toggle, logoutBtn, etc)
   initAppShell();
+
+  // Configure premium defaults for Chart.js
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.color = '#94A3B8';
+    Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+    Chart.defaults.font.size = 11;
+  }
 
   // Set header date
   const dateEl = document.getElementById('dashboard-date');
@@ -13,12 +70,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     dateEl.textContent = new Date().toLocaleDateString('en-US', options);
   }
 
-  // Populate user name in welcome heading
+  // Populate user name in welcome heading with dynamic time-of-day greeting
   const welcomeEl = document.getElementById('welcome-message');
   const user = getUser();
   if (welcomeEl && user) {
-    welcomeEl.textContent = `Hello, ${user.name}`;
+    const hour = new Date().getHours();
+    let greeting = 'Hello';
+    if (hour >= 5 && hour < 12) greeting = 'Good morning';
+    else if (hour >= 12 && hour < 18) greeting = 'Good afternoon';
+    else if (hour >= 18 && hour < 22) greeting = 'Good evening';
+    else greeting = 'Good night';
+    
+    welcomeEl.textContent = `${greeting}, ${user.name}`;
   }
+
+  // Setup Keyboard Shortcuts
+  setupKeyboardShortcuts();
 
   // Load dashboard data
   await refreshDashboard();
@@ -27,9 +94,67 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupModal();
 });
 
+// Show skeleton shimmers for metrics, lists, and charts
+function showSkeletons() {
+  const metricValues = ['total-balance', 'total-income', 'total-expenses', 'monthly-budget'];
+  metricValues.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = `<span class="skeleton" style="display: inline-block; width: 80px; height: 1.75rem;"></span>`;
+    }
+  });
+
+  const recentList = document.getElementById('recent-transactions-list');
+  if (recentList) {
+    recentList.innerHTML = Array(3).fill(0).map(() => `
+      <div class="transaction-row-item skeleton" style="height: 58px; border: none;"></div>
+    `).join('');
+  }
+
+  const trendCanvas = document.getElementById('spendingTrendChart');
+  const catCanvas = document.getElementById('categoryBreakdownChart');
+  const compCanvas = document.getElementById('monthlyComparisonChart');
+
+  [trendCanvas, catCanvas, compCanvas].forEach(canvas => {
+    if (canvas) {
+      canvas.style.display = 'none';
+      let skeleton = canvas.parentElement.querySelector('.skeleton-chart');
+      if (!skeleton) {
+        skeleton = document.createElement('div');
+        skeleton.className = 'skeleton skeleton-chart';
+        canvas.parentElement.appendChild(skeleton);
+      } else {
+        skeleton.style.display = 'block';
+      }
+      // Hide any existing empty states
+      const empty = canvas.parentElement.querySelector('.empty-state');
+      if (empty) empty.style.display = 'none';
+    }
+  });
+}
+
+function hideChartSkeletons() {
+  const trendCanvas = document.getElementById('spendingTrendChart');
+  const catCanvas = document.getElementById('categoryBreakdownChart');
+  const compCanvas = document.getElementById('monthlyComparisonChart');
+
+  [trendCanvas, catCanvas, compCanvas].forEach(canvas => {
+    if (canvas) {
+      const skeleton = canvas.parentElement.querySelector('.skeleton-chart');
+      if (skeleton) {
+        skeleton.style.display = 'none';
+      }
+    }
+  });
+}
+
 // Refresh all dashboard metrics, recent transactions and charts
 async function refreshDashboard() {
+  showSkeletons();
   try {
+    // Small artificial delay for shimmer visual effectiveness
+    await new Promise(resolve => setTimeout(resolve, 400));
+
     // 1. Get Summary metrics and Recent Transactions
     const summaryData = await API.getSummary();
     updateMetrics(summaryData.summary);
@@ -42,6 +167,8 @@ async function refreshDashboard() {
 
   } catch (err) {
     showToast(err.message || 'Failed to load dashboard metrics.', 'error');
+  } finally {
+    hideChartSkeletons();
   }
 }
 
@@ -57,14 +184,12 @@ function updateMetrics(metrics) {
   const budgetValEl = document.getElementById('monthly-budget');
   const progressBarEl = document.getElementById('budget-progress-bar');
   const budgetFooterEl = document.getElementById('budget-footer-text');
+  const budgetCard = document.querySelector('.metric-card.budget');
 
-  if (balanceEl) balanceEl.textContent = formatCurrency(metrics.totalBalance);
-  if (incomeEl) incomeEl.textContent = formatCurrency(metrics.totalIncome);
-  if (expenseEl) expenseEl.textContent = formatCurrency(metrics.totalExpenses);
-  
-  if (budgetValEl) {
-    budgetValEl.textContent = formatCurrency(metrics.monthlyBudget);
-  }
+  if (balanceEl) animateValue('total-balance', metrics.totalBalance);
+  if (incomeEl) animateValue('total-income', metrics.totalIncome);
+  if (expenseEl) animateValue('total-expenses', metrics.totalExpenses);
+  if (budgetValEl) animateValue('monthly-budget', metrics.monthlyBudget);
 
   if (progressBarEl && budgetFooterEl) {
     if (metrics.monthlyBudget > 0) {
@@ -73,20 +198,24 @@ function updateMetrics(metrics) {
       
       // Visual indicators based on budget consumption
       if (metrics.budgetProgress >= 100) {
-        progressBarEl.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
-        budgetFooterEl.innerHTML = `<span style="color: var(--error); font-weight: 700;">⚠ Budget exceeded by ${formatCurrency(metrics.monthlyExpenses - metrics.monthlyBudget)}!</span>`;
+        progressBarEl.style.background = 'linear-gradient(90deg, var(--danger), #e11d48)';
+        budgetFooterEl.innerHTML = `<span style="color: var(--danger); font-weight: 700;">⚠ Budget exceeded by ${formatCurrency(metrics.monthlyExpenses - metrics.monthlyBudget)}!</span>`;
+        if (budgetCard) budgetCard.classList.add('warning-pulse');
         // Alert trigger
         showToast('Spending limit reached! You have exceeded your monthly budget.', 'error');
       } else if (metrics.budgetProgress >= 80) {
-        progressBarEl.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+        progressBarEl.style.background = 'linear-gradient(90deg, var(--warning), #d97706)';
         budgetFooterEl.innerHTML = `<span style="color: var(--warning); font-weight: 600;">⚠ Alert: Used ${metrics.budgetProgress.toFixed(0)}% of budget</span>`;
+        if (budgetCard) budgetCard.classList.add('warning-pulse');
       } else {
         progressBarEl.style.background = 'linear-gradient(90deg, var(--success), #059669)';
         budgetFooterEl.textContent = `${metrics.budgetProgress.toFixed(0)}% of monthly budget consumed`;
+        if (budgetCard) budgetCard.classList.remove('warning-pulse');
       }
     } else {
       progressBarEl.style.width = '0%';
       budgetFooterEl.textContent = 'No budget limit set';
+      if (budgetCard) budgetCard.classList.remove('warning-pulse');
     }
   }
 }
@@ -97,7 +226,13 @@ function renderRecentTransactions(transactions) {
   if (!container) return;
 
   if (transactions.length === 0) {
-    container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 2rem 0;">No recent transactions found.</p>`;
+    container.innerHTML = `
+      <div class="empty-state" style="padding: 2.5rem 1rem;">
+        <div class="empty-state-icon">💸</div>
+        <div class="empty-state-title">No transactions yet</div>
+        <div class="empty-state-subtitle">Your recent cash flows will show up here.</div>
+      </div>
+    `;
     return;
   }
 
@@ -139,6 +274,30 @@ async function renderSpendingTrend() {
 
   try {
     const data = await API.getSpendingTrend();
+    
+    // Check if empty
+    if (!data.trend || data.trend.length === 0) {
+      canvas.style.display = 'none';
+      let empty = canvas.parentElement.querySelector('.empty-state');
+      if (!empty) {
+        empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+          <div class="empty-state-icon">📈</div>
+          <div class="empty-state-title">No spending trend data</div>
+          <div class="empty-state-subtitle">Daily expenses for the current month will be plotted here.</div>
+        `;
+        canvas.parentElement.appendChild(empty);
+      } else {
+        empty.style.display = 'flex';
+      }
+      return;
+    } else {
+      canvas.style.display = 'block';
+      const empty = canvas.parentElement.querySelector('.empty-state');
+      if (empty) empty.style.display = 'none';
+    }
+
     const dates = data.trend.map(d => {
       const parts = d.date.split('-');
       return `${parts[1]}/${parts[2]}`; // MM/DD
@@ -149,34 +308,63 @@ async function renderSpendingTrend() {
       spendingChart.destroy();
     }
 
-    spendingChart = new Chart(canvas.getContext('2d'), {
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+    gradient.addColorStop(0, 'rgba(124, 58, 237, 0.25)'); // --accent-violet at 25% opacity
+    gradient.addColorStop(1, 'rgba(124, 58, 237, 0)');
+
+    spendingChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: dates.length > 0 ? dates : ['No Data'],
+        labels: dates,
         datasets: [{
           label: 'Daily Spending',
-          data: amounts.length > 0 ? amounts : [0],
-          borderColor: '#8a333d',
-          backgroundColor: 'rgba(138, 51, 61, 0.1)',
+          data: amounts,
+          borderColor: '#7C3AED', // --accent-violet
+          backgroundColor: gradient,
           borderWidth: 3,
           fill: true,
-          tension: 0.3,
-          pointBackgroundColor: '#8a333d'
+          tension: 0.35,
+          pointBackgroundColor: '#06B6D4', // --accent-cyan for point contrast
+          pointBorderColor: '#7C3AED',
+          pointHoverBackgroundColor: '#7C3AED',
+          pointHoverBorderColor: '#06B6D4',
+          pointRadius: 3,
+          pointHoverRadius: 6
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false }
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleFont: { family: "'Syne', sans-serif", weight: 'bold' },
+            bodyFont: { family: "'Inter', sans-serif" },
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+            callbacks: {
+              label: function(context) {
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.raw);
+              }
+            }
+          }
         },
         scales: {
           y: {
             beginAtZero: true,
-            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+            ticks: {
+              callback: function(value) {
+                return '$' + value;
+              }
+            }
           },
           x: {
-            grid: { display: false }
+            grid: { display: false, drawBorder: false }
           }
         }
       }
@@ -193,6 +381,30 @@ async function renderCategoryBreakdown() {
 
   try {
     const data = await API.getCategoryBreakdown();
+    
+    // Check if empty
+    if (!data.breakdown || data.breakdown.length === 0) {
+      canvas.style.display = 'none';
+      let empty = canvas.parentElement.querySelector('.empty-state');
+      if (!empty) {
+        empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+          <div class="empty-state-icon">🏷️</div>
+          <div class="empty-state-title">No expenses logged</div>
+          <div class="empty-state-subtitle">Create transactions of type "expense" to see category breakdown.</div>
+        `;
+        canvas.parentElement.appendChild(empty);
+      } else {
+        empty.style.display = 'flex';
+      }
+      return;
+    } else {
+      canvas.style.display = 'block';
+      const empty = canvas.parentElement.querySelector('.empty-state');
+      if (empty) empty.style.display = 'none';
+    }
+
     const categories = data.breakdown.map(d => d.category);
     const amounts = data.breakdown.map(d => d.amount);
 
@@ -200,20 +412,29 @@ async function renderCategoryBreakdown() {
       categoryChart.destroy();
     }
 
-    // Set colors for the breakdown slices
     const colors = [
-      '#8a333d', '#c85a49', '#e07a5f', '#d4a373', '#b56576', 
-      '#e07a8b', '#6d597a', '#5c3d2e', '#64748b'
+      '#7C3AED', // Violet
+      '#06B6D4', // Cyan
+      '#10B981', // Success (Emerald green)
+      '#F43F5E', // Danger (Rose red)
+      '#F59E0B', // Amber
+      '#8B5CF6', // Purple
+      '#EC4899', // Pink
+      '#3B82F6', // Blue
+      '#64748B'  // Slate
     ];
 
     categoryChart = new Chart(canvas.getContext('2d'), {
       type: 'doughnut',
       data: {
-        labels: categories.length > 0 ? categories : ['No Expenses'],
+        labels: categories,
         datasets: [{
-          data: amounts.length > 0 ? amounts : [100],
-          backgroundColor: amounts.length > 0 ? colors.slice(0, categories.length) : ['rgba(255,255,255,0.05)'],
-          borderWidth: 0
+          data: amounts,
+          backgroundColor: colors.slice(0, categories.length),
+          borderWidth: 2,
+          borderColor: 'var(--bg-secondary)', // blend with card background
+          hoverBorderColor: 'var(--bg-secondary)',
+          spacing: 2
         }]
       },
       options: {
@@ -222,10 +443,32 @@ async function renderCategoryBreakdown() {
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { boxWidth: 12, padding: 15 }
+            labels: {
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 15,
+              font: { family: "'Inter', sans-serif" },
+              color: 'var(--text-secondary)'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleFont: { family: "'Syne', sans-serif", weight: 'bold' },
+            bodyFont: { family: "'Inter', sans-serif" },
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: function(context) {
+                const value = context.raw;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return ` ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)} (${percentage}%)`;
+              }
+            }
           }
         },
-        cutout: '70%'
+        cutout: '72%'
       }
     });
   } catch (err) {
@@ -240,6 +483,30 @@ async function renderMonthlyComparison() {
 
   try {
     const data = await API.getMonthlyComparison();
+    
+    // Check if empty
+    if (!data.comparison || data.comparison.length === 0) {
+      canvas.style.display = 'none';
+      let empty = canvas.parentElement.querySelector('.empty-state');
+      if (!empty) {
+        empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = `
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No comparative statistics</div>
+          <div class="empty-state-subtitle">Monthly comparisons will be generated once records are logged.</div>
+        `;
+        canvas.parentElement.appendChild(empty);
+      } else {
+        empty.style.display = 'flex';
+      }
+      return;
+    } else {
+      canvas.style.display = 'block';
+      const empty = canvas.parentElement.querySelector('.empty-state');
+      if (empty) empty.style.display = 'none';
+    }
+
     const months = data.comparison.map(d => {
       const parts = d.month.split('-');
       const date = new Date(parts[0], parseInt(parts[1]) - 1, 1);
@@ -255,19 +522,21 @@ async function renderMonthlyComparison() {
     comparisonChart = new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: {
-        labels: months.length > 0 ? months : ['No Data'],
+        labels: months,
         datasets: [
           {
             label: 'Income',
-            data: income.length > 0 ? income : [0],
-            backgroundColor: '#10b981',
-            borderRadius: 6
+            data: income,
+            backgroundColor: '#10B981', // --success
+            borderRadius: 4,
+            maxBarThickness: 20
           },
           {
             label: 'Expense',
-            data: expense.length > 0 ? expense : [0],
-            backgroundColor: '#ef4444',
-            borderRadius: 6
+            data: expense,
+            backgroundColor: '#F43F5E', // --danger
+            borderRadius: 4,
+            maxBarThickness: 20
           }
         ]
       },
@@ -275,15 +544,42 @@ async function renderMonthlyComparison() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom' }
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 15,
+              font: { family: "'Inter', sans-serif" },
+              color: 'var(--text-secondary)'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleFont: { family: "'Syne', sans-serif", weight: 'bold' },
+            bodyFont: { family: "'Inter', sans-serif" },
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: function(context) {
+                return ` ${context.dataset.label}: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.raw)}`;
+              }
+            }
+          }
         },
         scales: {
           y: {
             beginAtZero: true,
-            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+            ticks: {
+              callback: function(value) {
+                return '$' + value;
+              }
+            }
           },
           x: {
-            grid: { display: false }
+            grid: { display: false, drawBorder: false }
           }
         }
       }
@@ -355,6 +651,14 @@ function setupModal() {
       return;
     }
 
+    const submitBtn = document.getElementById('modal-submit-btn') || form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn ? submitBtn.innerHTML : 'Save Transaction';
+
+    if (submitBtn) {
+      submitBtn.classList.add('btn-loading');
+      submitBtn.innerHTML = `<span>Saving...</span><span class="btn-spinner"></span>`;
+    }
+
     try {
       await API.createTransaction({
         title,
@@ -371,6 +675,11 @@ function setupModal() {
       await refreshDashboard();
     } catch (err) {
       showToast(err.message || 'Failed to save transaction.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.innerHTML = originalBtnText;
+      }
     }
   });
 }

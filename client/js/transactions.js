@@ -33,6 +33,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set up modal behaviors
   setupModal();
 
+  // Setup Keyboard Shortcuts
+  setupKeyboardShortcuts();
+
   // CSV Export trigger
   const exportBtn = document.getElementById('export-csv-btn');
   if (exportBtn) {
@@ -345,6 +348,14 @@ function setupModal() {
       notes
     };
 
+    const submitBtn = document.getElementById('save-transaction-btn') || form.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.innerHTML : 'Save';
+
+    if (submitBtn) {
+      submitBtn.classList.add('btn-loading');
+      submitBtn.innerHTML = `<span>Saving...</span><span class="btn-spinner"></span>`;
+    }
+
     try {
       if (id) {
         // Edit mode
@@ -360,6 +371,11 @@ function setupModal() {
       fetchTransactions();
     } catch (err) {
       showToast(err.message || 'Failed to save transaction.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.innerHTML = originalText;
+      }
     }
   });
 }
@@ -410,7 +426,14 @@ async function confirmDeleteTransaction(id) {
 
 // Compile and Download CSV logic
 async function exportCSV() {
+  const exportBtn = document.getElementById('export-csv-btn');
+  const originalBtnText = exportBtn ? exportBtn.innerHTML : 'Export CSV';
+
   try {
+    if (exportBtn) {
+      exportBtn.classList.add('btn-loading');
+      exportBtn.innerHTML = `<span>Exporting...</span><span class="btn-spinner"></span>`;
+    }
     showToast('Preparing CSV file...', 'info');
     // Fetch all transactions without pagination
     const allFilters = { ...filters, limit: 'all' };
@@ -459,7 +482,44 @@ async function exportCSV() {
     showToast('CSV downloaded successfully!', 'success');
   } catch (err) {
     showToast(err.message || 'Failed to export CSV.', 'error');
+  } finally {
+    if (exportBtn) {
+      exportBtn.classList.remove('btn-loading');
+      exportBtn.innerHTML = originalBtnText;
+    }
   }
+}
+
+// Global Keyboard Shortcuts for Transactions page
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('transaction-modal');
+    
+    // Alt + N: Open Quick Add modal
+    if (e.altKey && e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      const openBtn = document.getElementById('open-transaction-modal-btn');
+      if (openBtn) openBtn.click();
+    }
+    
+    // Esc: Close modal
+    if (e.key === 'Escape') {
+      if (modal && modal.classList.contains('show')) {
+        const closeBtn = document.getElementById('close-transaction-modal') || document.getElementById('cancel-transaction');
+        if (closeBtn) closeBtn.click();
+      }
+    }
+
+    // / : Focus search input
+    if (e.key === '/' && document.activeElement !== document.getElementById('search-input')) {
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  });
 }
 
 // Bind to window to allow button onclick inline triggers to resolve

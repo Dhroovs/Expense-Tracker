@@ -76,6 +76,14 @@ function setupAddCategory() {
     const input = document.getElementById('new-category-name');
     const name = input.value;
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.innerHTML : 'Create';
+
+    if (submitBtn) {
+      submitBtn.classList.add('btn-loading');
+      submitBtn.innerHTML = `<span>Creating...</span><span class="btn-spinner"></span>`;
+    }
+
     try {
       await API.createCategory(name);
       showToast('Category created successfully!', 'success');
@@ -83,6 +91,11 @@ function setupAddCategory() {
       fetchCategories();
     } catch (err) {
       showToast(err.message || 'Failed to create category.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.innerHTML = originalText;
+      }
     }
   });
 }
@@ -109,6 +122,14 @@ function setupEditModal() {
     const id = document.getElementById('edit-category-id').value;
     const name = document.getElementById('edit-category-name').value;
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.innerHTML : 'Save';
+
+    if (submitBtn) {
+      submitBtn.classList.add('btn-loading');
+      submitBtn.innerHTML = `<span>Saving...</span><span class="btn-spinner"></span>`;
+    }
+
     try {
       await API.updateCategory(id, name);
       showToast('Category updated successfully!', 'success');
@@ -116,6 +137,11 @@ function setupEditModal() {
       fetchCategories();
     } catch (err) {
       showToast(err.message || 'Failed to update category.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.innerHTML = originalText;
+      }
     }
   });
 }

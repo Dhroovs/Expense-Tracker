@@ -57,6 +57,14 @@ function setupProfileUpdate() {
     const email = document.getElementById('profile-email').value;
     const monthly_budget = document.getElementById('profile-budget').value || 0;
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.innerHTML : 'Save Changes';
+
+    if (submitBtn) {
+      submitBtn.classList.add('btn-loading');
+      submitBtn.innerHTML = `<span>Saving...</span><span class="btn-spinner"></span>`;
+    }
+
     try {
       const data = await API.updateProfile({
         name,
@@ -89,6 +97,11 @@ function setupProfileUpdate() {
       showToast('Profile updated successfully!', 'success');
     } catch (err) {
       showToast(err.message || 'Failed to update profile.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.innerHTML = originalText;
+      }
     }
   });
 }
@@ -119,6 +132,14 @@ function setupPasswordChange() {
     const email = document.getElementById('profile-email').value;
     const monthly_budget = document.getElementById('profile-budget').value || 0;
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn ? submitBtn.innerHTML : 'Update Password';
+
+    if (submitBtn) {
+      submitBtn.classList.add('btn-loading');
+      submitBtn.innerHTML = `<span>Updating...</span><span class="btn-spinner"></span>`;
+    }
+
     try {
       const data = await API.updateProfile({
         name,
@@ -136,6 +157,11 @@ function setupPasswordChange() {
       form.reset();
     } catch (err) {
       showToast(err.message || 'Failed to change password.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.classList.remove('btn-loading');
+        submitBtn.innerHTML = originalText;
+      }
     }
   });
 }

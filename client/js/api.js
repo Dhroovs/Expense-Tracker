@@ -20,6 +20,10 @@ function getUser() {
 
 function setUser(user) {
   localStorage.setItem('authUser', JSON.stringify(user));
+  if (user && user.theme) {
+    localStorage.setItem('theme', user.theme);
+    document.documentElement.setAttribute('data-theme', user.theme);
+  }
 }
 
 function removeUser() {
@@ -130,18 +134,43 @@ function showToast(message, type = 'success') {
 
 // Theme Toggle Helper
 function initTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
+  let savedTheme = localStorage.getItem('theme');
+  
+  if (!savedTheme) {
+    const user = getUser();
+    if (user && user.theme) {
+      savedTheme = user.theme;
+      localStorage.setItem('theme', savedTheme);
+    } else {
+      savedTheme = 'light';
+    }
+  }
+  
   document.documentElement.setAttribute('data-theme', savedTheme);
   
   const themeToggle = document.getElementById('theme-toggle');
   if (themeToggle) {
     updateThemeButtonLabel(themeToggle, savedTheme);
-    themeToggle.addEventListener('click', () => {
+    themeToggle.addEventListener('click', async () => {
       const currentTheme = document.documentElement.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', newTheme);
       localStorage.setItem('theme', newTheme);
       updateThemeButtonLabel(themeToggle, newTheme);
+      
+      // Save theme to server if user is authenticated
+      if (getToken()) {
+        try {
+          const res = await API.updateTheme(newTheme);
+          const user = getUser();
+          if (user) {
+            user.theme = res.theme;
+            localStorage.setItem('authUser', JSON.stringify(user));
+          }
+        } catch (e) {
+          console.error('Failed to sync theme with database:', e);
+        }
+      }
     });
   }
 }
@@ -193,6 +222,20 @@ const API = {
   updateTransaction: (id, data) => request(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteTransaction: (id) => request(`/transactions/${id}`, { method: 'DELETE' }),
 
+  // Theme
+  updateTheme: (theme) => request('/auth/theme', { method: 'PUT', body: JSON.stringify({ theme }) }),
+
+  // Audit Logs
+  getAuditLogs: (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== '') {
+        params.append(key, filters[key]);
+      }
+    });
+    return request(`/audit-logs?${params.toString()}`);
+  },
+
   // Analytics
   getSummary: () => request('/analytics/summary'),
   getCategoryBreakdown: () => request('/analytics/category-breakdown'),
@@ -229,6 +272,55 @@ function initAppShell() {
         window.location.href = '/pages/login.html';
       }, 500);
     });
+  }
+
+  // Mobile navigation drawer setup
+  const appContainer = document.querySelector('.app-container');
+  const sidebar = document.querySelector('.sidebar');
+  if (appContainer && sidebar) {
+    // Inject mobile top bar if not already present
+    if (!document.querySelector('.mobile-top-bar')) {
+      const mobileTopBar = document.createElement('div');
+      mobileTopBar.className = 'mobile-top-bar';
+      mobileTopBar.innerHTML = `
+        <button id="mobile-hamburger" class="hamburger-btn">
+          <svg viewBox="0 0 24 24" style="width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"></path></svg>
+        </button>
+        <div class="mobile-brand" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;" onclick="window.location.href='dashboard.html'">
+          <div class="brand-icon" style="width:32px;height:32px;border-radius:8px;font-size:0.95rem;box-shadow:none;background:linear-gradient(135deg, var(--primary), var(--primary-hover));color:white;display:flex;align-items:center;justify-content:center;font-weight:800;">XP</div>
+          <span class="brand-name" style="font-size:1.1rem;font-weight:700;letter-spacing:-0.5px;">ExpTracker</span>
+        </div>
+      `;
+      appContainer.insertBefore(mobileTopBar, appContainer.firstChild);
+    }
+
+    // Inject sidebar overlay if not already present
+    if (!document.querySelector('.sidebar-overlay')) {
+      const overlay = document.createElement('div');
+      overlay.className = 'sidebar-overlay';
+      document.body.appendChild(overlay);
+
+      const burgerBtn = document.getElementById('mobile-hamburger');
+      if (burgerBtn) {
+        burgerBtn.addEventListener('click', () => {
+          sidebar.classList.toggle('sidebar-open');
+          overlay.classList.toggle('show');
+        });
+      }
+
+      overlay.addEventListener('click', () => {
+        sidebar.classList.remove('sidebar-open');
+        overlay.classList.remove('show');
+      });
+
+      // Close drawer on link clicks
+      sidebar.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+          sidebar.classList.remove('sidebar-open');
+          overlay.classList.remove('show');
+        });
+      });
+    }
   }
 }
 
