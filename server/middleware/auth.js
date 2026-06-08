@@ -24,6 +24,13 @@ module.exports = (req, res, next) => {
       name: decoded.name,
       email: decoded.email
     };
+
+    // Fire-and-forget background processing for user's recurring transactions
+    const recurringService = require('../services/recurringService');
+    recurringService.processForUser(req.user.id).catch(err => {
+      console.error('Failed to process recurring transactions for user:', req.user.id, err);
+    });
+
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token.' });

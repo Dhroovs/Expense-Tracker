@@ -161,3 +161,80 @@ exports.getSpendingTrend = async (req, res) => {
     return res.status(500).json({ error: 'Internal server error calculating spending trend.' });
   }
 };
+
+exports.getSpendingDistribution = async (req, res) => {
+  const userId = req.user.id;
+  const interval = req.query.interval || 'day';
+
+  let queryText = '';
+  let queryParams = [userId];
+
+  if (interval === 'day') {
+    // Daily expenses for the current month
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const startOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
+    const endOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
+    
+    queryText = `
+      SELECT transaction_date::text as label, COALESCE(SUM(amount), 0) as amount
+      FROM transactions
+      WHERE user_id = $1 AND type = 'expense' AND transaction_date >= $2 AND transaction_date <= $3
+      GROUP BY transaction_date
+      ORDER BY transaction_date ASC
+    `;
+    queryParams.push(startOfMonth, endOfMonth);
+  } else if (interval === 'week') {
+    // Weekly expenses for the last 12 weeks
+    queryText = `
+      SELECT DATE_TRUNC('week', transaction_date)::date::text as label, COALESCE(SUM(amount), 0) as amount
+      FROM transactions
+      WHERE user_id = $1 AND type = 'expense' AND transaction_date >= NOW() - INTERVAL '12 weeks'
+      GROUP BY DATE_TRUNC('week', transaction_date)
+      ORDER BY label ASC
+    `;
+  } else if (interval === 'month') {
+    // Monthly expenses for the last 12 months
+    queryText = `
+      SELECT TO_CHAR(transaction_date, 'YYYY-MM') as label, COALESCE(SUM(amount), 0) as amount
+      FROM transactions
+      WHERE user_id = $1 AND type = 'expense' AND transaction_date >= NOW() - INTERVAL '12 months'
+      GROUP BY TO_CHAR(transaction_date, 'YYYY-MM')
+      ORDER BY label ASC
+    `;
+  } else if (interval === '6months') {
+    // Monthly expenses for the last 6 months
+    queryText = `
+      SELECT TO_CHAR(transaction_date, 'YYYY-MM') as label, COALESCE(SUM(amount), 0) as amount
+      FROM transactions
+      WHERE user_id = $1 AND type = 'expense' AND transaction_date >= NOW() - INTERVAL '6 months'
+      GROUP BY TO_CHAR(transaction_date, 'YYYY-MM')
+      ORDER BY label ASC
+    `;
+  } else if (interval === 'annual') {
+    // Annual expenses (grouped by year)
+    queryText = `
+      SELECT TO_CHAR(transaction_date, 'YYYY') as label, COALESCE(SUM(amount), 0) as amount
+      FROM transactions
+      WHERE user_id = $1 AND type = 'expense'
+      GROUP BY TO_CHAR(transaction_date, 'YYYY')
+      ORDER BY label ASC
+    `;
+  } else {
+    return res.status(400).json({ error: 'Invalid interval parameter.' });
+  }
+
+  try {
+    const result = await db.query(queryText, queryParams);
+    const formatted = result.rows.map(row => ({
+      label: row.label,
+      amount: parseFloat(row.amount)
+    }));
+    return res.status(200).json({ distribution: formatted });
+  } catch (err) {
+    console.error(`Get spending distribution error (${interval}):`, err);
+    return res.status(500).json({ error: 'Internal server error calculating spending distribution.' });
+  }
+};
+

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>History & Audit Logs | Spendora</title>
+  <title>Recurring Transactions | Spendora</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -52,13 +52,13 @@
           </a>
         </li>
         <li class="nav-item">
-          <a href="recurring.html" class="nav-link">
+          <a href="recurring.html" class="nav-link active">
             <svg viewBox="0 0 24 24"><path d="M17 2.1l4 4-4 4M3 12a9 9 0 0115-6.7L21 8M7 21.9l-4-4 4-4M21 12a9 9 0 01-15 6.7L3 16" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span>Recurring</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="history.html" class="nav-link active">
+          <a href="history.html" class="nav-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span>History</span>
           </a>
@@ -90,51 +90,108 @@
     <main class="main-content">
       <div class="header-container">
         <div class="page-title-section">
-          <h1 class="page-title">Activity History</h1>
-          <p class="page-subtitle">Track modifications, additions, and deletions of transactions</p>
+          <h1 class="page-title">Recurring Transactions</h1>
+          <p class="page-subtitle">Schedule repeating income and expense items automatically</p>
         </div>
       </div>
 
-      <!-- Filters Bar -->
-      <div class="filters-bar" style="margin-bottom: 2rem;">
-        <div style="display: flex; gap: 1rem; align-items: center; width: 100%; flex-wrap: wrap;">
-          <div style="display: flex; flex-direction: column; gap: 0.25rem; min-width: 180px;">
-            <label for="action-filter" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Filter Action Type</label>
-            <select id="action-filter" class="form-control">
-              <option value="">All Actions</option>
-              <option value="CREATE">Create</option>
-              <option value="UPDATE">Update</option>
-              <option value="DELETE">Delete</option>
-            </select>
+      <div class="analytics-grid" style="grid-template-columns: 1fr 2fr;">
+        <!-- Setup Recurring Panel -->
+        <div class="dashboard-panel glass-panel" style="height: fit-content;">
+          <h2 class="panel-title" id="form-panel-title">Add Recurring Schedule</h2>
+          <form id="recurring-form">
+            <!-- Hidden field for edit status -->
+            <input type="hidden" id="edit-recurring-id" value="">
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label for="title-input">Title</label>
+              <input type="text" id="title-input" class="form-control" placeholder="e.g. Rent, Netflix" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label for="amount-input">Amount ($)</label>
+                <input type="number" id="amount-input" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+              </div>
+              <div class="form-group">
+                <label for="type-input">Type</label>
+                <select id="type-input" class="form-control" required>
+                  <option value="expense" selected>Expense</option>
+                  <option value="income">Income</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label for="category-input">Category</label>
+                <select id="category-input" class="form-control" required>
+                  <!-- Loaded dynamically -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="frequency-input">Frequency</label>
+                <select id="frequency-input" class="form-control" required>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly" selected>Monthly</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label for="start-date-input">Start Date</label>
+              <input type="date" id="start-date-input" class="form-control" required>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">Future transactions will generate starting from this date.</span>
+            </div>
+
+            <!-- Next due date field (visible only during edit to allow shifting next generation date) -->
+            <div class="form-group" id="next-due-date-group" style="display: none; margin-bottom: 1rem;">
+              <label for="next-due-date-input">Next Generation Date</label>
+              <input type="date" id="next-due-date-input" class="form-control">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label for="notes-input">Notes (Optional)</label>
+              <textarea id="notes-input" class="form-control" rows="2" placeholder="Brief notes..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem;">
+              <button type="button" class="btn btn-secondary" id="cancel-edit-btn" style="display: none; flex: 1;">Cancel Edit</button>
+              <button type="submit" class="btn btn-primary" id="submit-btn" style="flex: 2;">Save Schedule</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Schedules List Grid -->
+        <div class="dashboard-panel glass-panel">
+          <h2 class="panel-title">Active Schedules</h2>
+          <div class="table-responsive" style="margin-top: 0.5rem;">
+            <table class="data-table" id="recurring-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Freq</th>
+                  <th>Amount</th>
+                  <th>Next Due</th>
+                  <th style="text-align: center;">Status</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="recurring-table-body">
+                <tr>
+                  <td colspan="7" style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 3rem 0;">
+                    Loading recurring schedules...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          
-          <div style="margin-top: auto; margin-left: auto;">
-            <button class="btn btn-secondary" id="clear-history-filters-btn">Clear Filter</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Timeline Logs List -->
-      <div class="audit-timeline" id="audit-timeline-container">
-        <!-- Dynamic audit items go here -->
-        <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 4rem 0;">
-          Loading activity history logs...
-        </p>
-      </div>
-
-      <!-- Pagination Footer -->
-      <div class="pagination-container" style="margin-top: 2rem;">
-        <div class="pagination-info" id="pagination-info">
-          Showing 0 to 0 of 0 entries
-        </div>
-        <div class="pagination-buttons">
-          <button class="btn btn-secondary btn-icon-only" id="prev-page-btn" disabled>&lt;</button>
-          <button class="btn btn-secondary btn-icon-only" id="next-page-btn" disabled>&gt;</button>
         </div>
       </div>
     </main>
   </div>
 
-  <script src="/js/history.js"></script>
+  <script src="/js/recurring.js"></script>
 </body>
 </html>

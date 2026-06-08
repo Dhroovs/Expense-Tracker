@@ -3,7 +3,7 @@
    Dark-first, frosted glass, gradient accents
    ═══════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@800;900&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* ─── 1. DESIGN TOKENS ─── */
 :root {
@@ -13,6 +13,10 @@
   --bg-card: rgba(255, 255, 255, 0.05);
   --bg-card-solid: #131B2E;
   --bg-elevated: rgba(255, 255, 255, 0.08);
+
+  /* Logo variables */
+  --logo-text-color: #FFFFFF;
+  --logo-wallet-stroke: #FFFFFF;
 
   /* Accent */
   --accent-violet: #7C3AED;
@@ -90,6 +94,10 @@
   --bg-card-solid: #FFFFFF;
   --bg-elevated: rgba(255, 255, 255, 0.95);
   --text-primary: #0F172A;
+
+  /* Logo variables */
+  --logo-text-color: #0C3461;
+  --logo-wallet-stroke: #0C3461;
   --text-secondary: #475569;
   --text-muted: #94A3B8;
   --border: rgba(15, 23, 42, 0.08);
@@ -1760,7 +1768,19 @@ button { cursor: pointer; border: none; }
   100% { box-shadow: 0 8px 32px rgba(245, 158, 11, 0.15); }
 }
 
-.metric-card.warning-pulse {
+.warning-pulse, .metric-card.warning-pulse {
   animation: warningPulse 2s infinite ease-in-out;
 }
+
+@keyframes overspentPulse {
+  0% { box-shadow: 0 8px 32px rgba(244, 63, 94, 0.1); }
+  50% { box-shadow: 0 8px 32px rgba(244, 63, 94, 0.35); border-color: rgba(244, 63, 94, 0.4); }
+  100% { box-shadow: 0 8px 32px rgba(244, 63, 94, 0.1); }
+}
+
+.overspent-pulse {
+  animation: overspentPulse 2s infinite ease-in-out;
+  border-color: rgba(244, 63, 94, 0.4) !important;
+}
+
 

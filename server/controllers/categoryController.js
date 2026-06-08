@@ -4,10 +4,27 @@ exports.getCategories = async (req, res) => {
   const userId = req.user.id;
   try {
     const result = await db.query(
-      'SELECT id, name, created_at FROM categories WHERE user_id = $1 ORDER BY name ASC',
+      `SELECT 
+         c.id, 
+         c.name, 
+         c.budget, 
+         c.created_at,
+         COALESCE(SUM(CASE WHEN t.type = 'expense' AND t.transaction_date >= DATE_TRUNC('month', CURRENT_DATE) AND t.transaction_date < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' THEN t.amount ELSE 0 END), 0) as spent
+       FROM categories c
+       LEFT JOIN transactions t ON t.category_id = c.id
+       WHERE c.user_id = $1
+       GROUP BY c.id, c.name, c.budget, c.created_at
+       ORDER BY c.name ASC`,
       [userId]
     );
-    return res.status(200).json({ categories: result.rows });
+
+    const formatted = result.rows.map(row => ({
+      ...row,
+      budget: parseFloat(row.budget || 0),
+      spent: parseFloat(row.spent || 0)
+    }));
+
+    return res.status(200).json({ categories: formatted });
   } catch (err) {
     console.error('Get categories error:', err);
     return res.status(500).json({ error: 'Internal server error fetching categories.' });
@@ -15,11 +32,16 @@ exports.getCategories = async (req, res) => {
 };
 
 exports.createCategory = async (req, res) => {
-  const { name } = req.body;
+  const { name, budget } = req.body;
   const userId = req.user.id;
 
   if (!name || name.trim() === '') {
     return res.status(400).json({ error: 'Category name is required.' });
+  }
+
+  const parsedBudget = parseFloat(budget) || 0.00;
+  if (isNaN(parsedBudget) || parsedBudget < 0) {
+    return res.status(400).json({ error: 'Budget must be a non-negative number.' });
   }
 
   try {
@@ -36,13 +58,17 @@ exports.createCategory = async (req, res) => {
     }
 
     const insertResult = await db.query(
-      'INSERT INTO categories (user_id, name) VALUES ($1, $2) RETURNING id, name, created_at',
-      [userId, cleanName]
+      'INSERT INTO categories (user_id, name, budget) VALUES ($1, $2, $3) RETURNING id, name, budget, created_at',
+      [userId, cleanName, parsedBudget]
     );
 
     return res.status(201).json({
       message: 'Category created successfully.',
-      category: insertResult.rows[0]
+      category: {
+        ...insertResult.rows[0],
+        budget: parseFloat(insertResult.rows[0].budget),
+        spent: 0
+      }
     });
 
   } catch (err) {
@@ -53,11 +79,16 @@ exports.createCategory = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
+  const { name, budget } = req.body;
   const userId = req.user.id;
 
   if (!name || name.trim() === '') {
     return res.status(400).json({ error: 'Category name is required.' });
+  }
+
+  const parsedBudget = parseFloat(budget) || 0.00;
+  if (isNaN(parsedBudget) || parsedBudget < 0) {
+    return res.status(400).json({ error: 'Budget must be a non-negative number.' });
   }
 
   try {
@@ -84,13 +115,26 @@ exports.updateCategory = async (req, res) => {
     }
 
     const updateResult = await db.query(
-      'UPDATE categories SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING id, name, created_at',
-      [cleanName, id, userId]
+      'UPDATE categories SET name = $1, budget = $2 WHERE id = $3 AND user_id = $4 RETURNING id, name, budget, created_at',
+      [cleanName, parsedBudget, id, userId]
+    );
+
+    // Fetch the updated spent amount for this category as well
+    const spentResult = await db.query(
+      `SELECT COALESCE(SUM(amount), 0) as spent FROM transactions 
+       WHERE category_id = $1 AND user_id = $2 AND type = 'expense'
+       AND transaction_date >= DATE_TRUNC('month', CURRENT_DATE)
+       AND transaction_date < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'`,
+      [id, userId]
     );
 
     return res.status(200).json({
       message: 'Category updated successfully.',
-      category: updateResult.rows[0]
+      category: {
+        ...updateResult.rows[0],
+        budget: parseFloat(updateResult.rows[0].budget),
+        spent: parseFloat(spentResult.rows[0].spent || 0)
+      }
     });
 
   } catch (err) {

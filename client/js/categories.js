@@ -32,20 +32,66 @@ async function fetchCategories() {
 
     grid.innerHTML = categories.map(c => {
       const color = getColorHash(c.name);
+      const budget = parseFloat(c.budget) || 0;
+      const spent = parseFloat(c.spent) || 0;
+      
+      let progressHTML = '';
+      let borderGlow = '';
+      let warningPulse = '';
+      
+      if (budget > 0) {
+        const percent = Math.min((spent / budget) * 100, 100).toFixed(0);
+        const isOverspent = spent > budget;
+        const barColor = isOverspent 
+          ? 'linear-gradient(90deg, var(--danger), #e11d48)' 
+          : (percent >= 80 ? 'linear-gradient(90deg, var(--warning), #d97706)' : 'linear-gradient(90deg, var(--success), #059669)');
+        
+        const warningLabel = isOverspent 
+          ? `<span style="color: var(--danger); font-weight: bold; font-size: 0.72rem; display: flex; align-items: center; gap: 0.15rem; margin-top: 0.35rem;">⚠ Over budget by $${(spent - budget).toFixed(2)}</span>` 
+          : `<span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 0.35rem;">${percent}% consumed</span>`;
+
+        progressHTML = `
+          <div class="category-budget-sec" style="margin-top: 0.85rem; width: 100%;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.35rem;">
+              <span style="color: var(--text-secondary); font-weight: 500;">$${spent.toFixed(2)} spent</span>
+              <span style="color: var(--text-muted);">Limit: $${budget.toFixed(2)}</span>
+            </div>
+            <div class="progress-bar-container" style="height: 5px;">
+              <div class="progress-bar-fill" style="width: ${percent}%; background: ${barColor}; height: 100%;"></div>
+            </div>
+            ${warningLabel}
+          </div>
+        `;
+        
+        if (isOverspent) {
+          borderGlow = 'border-color: rgba(244, 63, 94, 0.4); box-shadow: 0 0 12px rgba(244, 63, 94, 0.15);';
+          warningPulse = 'overspent-pulse';
+        }
+      } else {
+        progressHTML = `
+          <div class="category-budget-sec" style="margin-top: 0.85rem; width: 100%; font-size: 0.75rem; color: var(--text-muted);">
+            No budget limit set
+          </div>
+        `;
+      }
+
       return `
-        <div class="category-card glass-panel">
-          <div class="category-info">
-            <span class="category-dot" style="background-color: ${color};"></span>
-            <span class="category-card-name">${c.name}</span>
+        <div class="category-card glass-panel ${warningPulse}" style="display: flex; flex-direction: column; align-items: flex-start; padding: 1.25rem; ${borderGlow}">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div class="category-info">
+              <span class="category-dot" style="background-color: ${color};"></span>
+              <span class="category-card-name" style="font-weight: 600; font-size: 0.95rem;">${c.name}</span>
+            </div>
+            <div class="actions-cell" style="display: flex; gap: 0.25rem;">
+              <button class="btn btn-secondary btn-icon-only" style="padding: 0.2rem; font-size: 0.75rem; width: 28px; height: 28px;" onclick="openCategoryEdit(${c.id}, '${c.name.replace(/'/g, "\\'")}', ${budget})" title="Edit">
+                ✏
+              </button>
+              <button class="btn btn-secondary btn-icon-only" style="padding: 0.2rem; font-size: 0.75rem; width: 28px; height: 28px; color: var(--danger);" onclick="confirmDeleteCategory(${c.id})" title="Delete">
+                🗑
+              </button>
+            </div>
           </div>
-          <div class="actions-cell">
-            <button class="btn btn-secondary btn-icon-only" style="padding: 0.2rem; font-size: 0.75rem; width: 30px; height: 30px;" onclick="openCategoryEdit(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="Edit">
-              ✏
-            </button>
-            <button class="btn btn-secondary btn-icon-only" style="padding: 0.2rem; font-size: 0.75rem; width: 30px; height: 30px; color: var(--error);" onclick="confirmDeleteCategory(${c.id})" title="Delete">
-              🗑
-            </button>
-          </div>
+          ${progressHTML}
         </div>
       `;
     }).join('');
@@ -73,8 +119,10 @@ function setupAddCategory() {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const input = document.getElementById('new-category-name');
-    const name = input.value;
+    const nameInput = document.getElementById('new-category-name');
+    const budgetInput = document.getElementById('new-category-budget');
+    const name = nameInput.value;
+    const budget = budgetInput.value || 0;
 
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn ? submitBtn.innerHTML : 'Create';
@@ -85,9 +133,10 @@ function setupAddCategory() {
     }
 
     try {
-      await API.createCategory(name);
+      await API.createCategory(name, budget);
       showToast('Category created successfully!', 'success');
-      input.value = '';
+      nameInput.value = '';
+      budgetInput.value = '';
       fetchCategories();
     } catch (err) {
       showToast(err.message || 'Failed to create category.', 'error');
@@ -121,6 +170,7 @@ function setupEditModal() {
     e.preventDefault();
     const id = document.getElementById('edit-category-id').value;
     const name = document.getElementById('edit-category-name').value;
+    const budget = document.getElementById('edit-category-budget').value || 0;
 
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn ? submitBtn.innerHTML : 'Save';
@@ -131,7 +181,7 @@ function setupEditModal() {
     }
 
     try {
-      await API.updateCategory(id, name);
+      await API.updateCategory(id, name, budget);
       showToast('Category updated successfully!', 'success');
       hideModal();
       fetchCategories();
@@ -147,12 +197,13 @@ function setupEditModal() {
 }
 
 // Row edit click helper (attached globally)
-function openCategoryEdit(id, name) {
+function openCategoryEdit(id, name, budget) {
   const modal = document.getElementById('edit-category-modal');
   if (!modal) return;
 
   document.getElementById('edit-category-id').value = id;
   document.getElementById('edit-category-name').value = name;
+  document.getElementById('edit-category-budget').value = budget || 0;
   modal.classList.add('show');
 }
 

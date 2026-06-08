@@ -9,5 +9,6 @@ router.get('/summary', analyticsController.getSummary);
 router.get('/category-breakdown', analyticsController.getCategoryBreakdown);
 router.get('/monthly-comparison', analyticsController.getMonthlyComparison);
 router.get('/spending-trend', analyticsController.getSpendingTrend);
+router.get('/spending-distribution', analyticsController.getSpendingDistribution);
 
 module.exports = router;

@@ -203,9 +203,16 @@ const API = {
 
   // Categories
   getCategories: () => request('/categories'),
-  createCategory: (name) => request('/categories', { method: 'POST', body: JSON.stringify({ name }) }),
-  updateCategory: (id, name) => request(`/categories/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }),
+  createCategory: (name, budget) => request('/categories', { method: 'POST', body: JSON.stringify({ name, budget }) }),
+  updateCategory: (id, name, budget) => request(`/categories/${id}`, { method: 'PUT', body: JSON.stringify({ name, budget }) }),
   deleteCategory: (id) => request(`/categories/${id}`, { method: 'DELETE' }),
+
+  // Recurring Transactions
+  getRecurrings: () => request('/recurring-transactions'),
+  createRecurring: (data) => request('/recurring-transactions', { method: 'POST', body: JSON.stringify(data) }),
+  updateRecurring: (id, data) => request(`/recurring-transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRecurring: (id) => request(`/recurring-transactions/${id}`, { method: 'DELETE' }),
+  toggleRecurring: (id, is_active) => request(`/recurring-transactions/${id}/toggle`, { method: 'PUT', body: JSON.stringify({ is_active }) }),
 
   // Transactions
   getTransactions: (filters = {}) => {
@@ -240,7 +247,8 @@ const API = {
   getSummary: () => request('/analytics/summary'),
   getCategoryBreakdown: () => request('/analytics/category-breakdown'),
   getMonthlyComparison: () => request('/analytics/monthly-comparison'),
-  getSpendingTrend: () => request('/analytics/spending-trend')
+  getSpendingTrend: () => request('/analytics/spending-trend'),
+  getSpendingDistribution: (interval) => request(`/analytics/spending-distribution?interval=${interval}`)
 };
 
 // Sidebar active link indicator & profile info loader
@@ -287,8 +295,18 @@ function initAppShell() {
           <svg viewBox="0 0 24 24" style="width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"></path></svg>
         </button>
         <div class="mobile-brand" style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;" onclick="window.location.href='dashboard.html'">
-          <div class="brand-icon" style="width:32px;height:32px;border-radius:8px;font-size:0.95rem;box-shadow:none;background:linear-gradient(135deg, var(--primary), var(--primary-hover));color:white;display:flex;align-items:center;justify-content:center;font-weight:800;">XP</div>
-          <span class="brand-name" style="font-size:1.1rem;font-weight:700;letter-spacing:-0.5px;">ExpTracker</span>
+          <div class="brand-icon" style="width:auto;height:auto;background:none;box-shadow:none;">
+            <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; display: block;" fill="none" stroke="var(--logo-wallet-stroke)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 8a4 4 0 1 1 8 0z" fill="#fbbf24" stroke="#fbbf24" stroke-width="1" />
+              <rect x="3" y="8" width="18" height="13" rx="2" fill="var(--bg-secondary)" />
+              <path d="M16 11h4a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-4" fill="var(--bg-secondary)" />
+              <circle cx="18" cy="13.5" r="0.75" fill="var(--logo-wallet-stroke)" stroke="none" />
+            </svg>
+          </div>
+          <div style="display: flex; flex-direction: column; line-height: 1;">
+            <span class="brand-name" style="font-family: 'Orbitron', sans-serif; font-size: 1.15rem; font-weight: 900; letter-spacing: 0.5px; color: var(--logo-text-color); background: none; -webkit-text-fill-color: initial; text-shadow: none;">SP<span style="color: #fbbf24;">E</span>NDORA</span>
+            <span class="brand-slogan" style="font-size: 0.52rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.1px; margin-top: 0.05rem; font-family: var(--font-body);">Know your spending</span>
+          </div>
         </div>
       `;
       appContainer.insertBefore(mobileTopBar, appContainer.firstChild);

@@ -87,6 +87,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Setup Keyboard Shortcuts
   setupKeyboardShortcuts();
 
+  // Setup interval selector change listener
+  const intervalSelect = document.getElementById('spending-interval-select');
+  if (intervalSelect) {
+    intervalSelect.addEventListener('change', async (e) => {
+      await renderSpendingDistribution(e.target.value);
+    });
+  }
+
   // Load dashboard data
   await refreshDashboard();
 
@@ -160,8 +168,13 @@ async function refreshDashboard() {
     updateMetrics(summaryData.summary);
     renderRecentTransactions(summaryData.recentTransactions);
 
-    // 2. Load and render charts
-    await renderSpendingTrend();
+    // 2. Render category budgets status list
+    await renderCategoryBudgets();
+
+    // 3. Load and render charts
+    const intervalSelect = document.getElementById('spending-interval-select');
+    const interval = intervalSelect ? intervalSelect.value : 'day';
+    await renderSpendingDistribution(interval);
     await renderCategoryBreakdown();
     await renderMonthlyComparison();
 
@@ -267,28 +280,34 @@ function renderRecentTransactions(transactions) {
   }).join('');
 }
 
-// Render Daily Spending Trend Chart (Line Chart)
-async function renderSpendingTrend() {
+// Render Spending Distribution Chart (Bar Chart with multiple intervals)
+async function renderSpendingDistribution(interval = 'day') {
   const canvas = document.getElementById('spendingTrendChart');
   if (!canvas) return;
 
   try {
-    const data = await API.getSpendingTrend();
+    const data = await API.getSpendingDistribution(interval);
+    const distribution = data.distribution || [];
     
     // Check if empty
-    if (!data.trend || data.trend.length === 0) {
+    if (distribution.length === 0) {
       canvas.style.display = 'none';
       let empty = canvas.parentElement.querySelector('.empty-state');
       if (!empty) {
         empty = document.createElement('div');
         empty.className = 'empty-state';
         empty.innerHTML = `
-          <div class="empty-state-icon">📈</div>
-          <div class="empty-state-title">No spending trend data</div>
-          <div class="empty-state-subtitle">Daily expenses for the current month will be plotted here.</div>
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No spending data</div>
+          <div class="empty-state-subtitle">Expenses logged during this interval will show up here.</div>
         `;
         canvas.parentElement.appendChild(empty);
       } else {
+        empty.innerHTML = `
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-title">No spending data</div>
+          <div class="empty-state-subtitle">Expenses logged during this interval will show up here.</div>
+        `;
         empty.style.display = 'flex';
       }
       return;
@@ -298,39 +317,47 @@ async function renderSpendingTrend() {
       if (empty) empty.style.display = 'none';
     }
 
-    const dates = data.trend.map(d => {
-      const parts = d.date.split('-');
-      return `${parts[1]}/${parts[2]}`; // MM/DD
+    const labels = distribution.map(d => {
+      const parts = d.label.split('-');
+      if (parts.length === 3) {
+        // YYYY-MM-DD (Day-wise or Week-wise start date)
+        const date = new Date(d.label);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); // e.g., "Jun 8"
+      } else if (parts.length === 2) {
+        // YYYY-MM (Month-wise / 6 months)
+        const date = new Date(parts[0], parseInt(parts[1]) - 1, 1);
+        return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }); // e.g., "Jun 26"
+      } else {
+        // YYYY (Annual)
+        return d.label; // e.g., "2026"
+      }
     });
-    const amounts = data.trend.map(d => d.amount);
+
+    const amounts = distribution.map(d => d.amount);
 
     if (spendingChart) {
       spendingChart.destroy();
     }
 
     const ctx = canvas.getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-    gradient.addColorStop(0, 'rgba(124, 58, 237, 0.25)'); // --accent-violet at 25% opacity
-    gradient.addColorStop(1, 'rgba(124, 58, 237, 0)');
+    
+    // Premium Bar gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, '#7C3AED'); // Violet
+    gradient.addColorStop(1, 'rgba(6, 182, 212, 0.4)'); // Cyan with opacity
 
     spendingChart = new Chart(ctx, {
-      type: 'line',
+      type: 'bar',
       data: {
-        labels: dates,
+        labels: labels,
         datasets: [{
-          label: 'Daily Spending',
+          label: 'Spending',
           data: amounts,
-          borderColor: '#7C3AED', // --accent-violet
           backgroundColor: gradient,
-          borderWidth: 3,
-          fill: true,
-          tension: 0.35,
-          pointBackgroundColor: '#06B6D4', // --accent-cyan for point contrast
-          pointBorderColor: '#7C3AED',
-          pointHoverBackgroundColor: '#7C3AED',
-          pointHoverBorderColor: '#06B6D4',
-          pointRadius: 3,
-          pointHoverRadius: 6
+          hoverBackgroundColor: '#8B5CF6',
+          borderRadius: 6,
+          borderWidth: 0,
+          maxBarThickness: 32
         }]
       },
       options: {
@@ -370,7 +397,7 @@ async function renderSpendingTrend() {
       }
     });
   } catch (err) {
-    console.error('Trend chart error:', err);
+    console.error('Spending distribution chart rendering error:', err);
   }
 }
 
@@ -683,3 +710,76 @@ function setupModal() {
     }
   });
 }
+
+// Render budgeted categories list and progress bars on the dashboard
+async function renderCategoryBudgets() {
+  const container = document.getElementById('category-budgets-list');
+  if (!container) return;
+
+  try {
+    const res = await API.getCategories();
+    // Only display categories that have an active budget limit set (> 0)
+    const budgetedCategories = res.categories.filter(c => parseFloat(c.budget) > 0);
+
+    if (budgetedCategories.length === 0) {
+      container.innerHTML = `
+        <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 3rem 1rem;">
+          No category budgets set.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = budgetedCategories.map(c => {
+      const budget = parseFloat(c.budget);
+      const spent = parseFloat(c.spent);
+      const percent = Math.min((spent / budget) * 100, 100).toFixed(0);
+      const isOverspent = spent > budget;
+      
+      const barColor = isOverspent 
+        ? 'linear-gradient(90deg, var(--danger), #e11d48)' 
+        : (percent >= 80 ? 'linear-gradient(90deg, var(--warning), #d97706)' : 'linear-gradient(90deg, var(--success), #059669)');
+
+      const color = getColorHash(c.name);
+
+      const statusLabel = isOverspent
+        ? `<span style="color: var(--danger); font-weight: bold; font-size: 0.72rem;">⚠ Over limit</span>`
+        : `<span style="color: var(--text-muted); font-size: 0.72rem;">${percent}% used</span>`;
+
+      return `
+        <div style="display: flex; flex-direction: column; gap: 0.35rem; padding: 0.65rem 0.85rem; border-radius: var(--r-md); background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.4rem; min-width: 0;">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${color}; flex-shrink: 0;"></span>
+              <span style="font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);">${c.name}</span>
+            </div>
+            ${statusLabel}
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-secondary);">
+            <span>$${spent.toFixed(2)} spent</span>
+            <span>$${budget.toFixed(2)} budget</span>
+          </div>
+          <div class="progress-bar-container" style="height: 4px; margin-top: 0.15rem;">
+            <div class="progress-bar-fill" style="width: ${percent}%; background: ${barColor}; height: 100%;"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load category budgets on dashboard:', err);
+    container.innerHTML = `<p style="color: var(--danger); font-size: 0.8rem; text-align: center; padding: 1rem 0;">Error loading budgets.</p>`;
+  }
+}
+
+// Generate simple hash color based on category name string
+function getColorHash(str) {
+  if (!str) return 'var(--text-muted)';
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+  return '#' + '00000'.substring(0, 6 - c.length) + c;
+}
+
+

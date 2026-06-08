@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profile | Personal Expense Tracker</title>
+  <title>Profile | Spendora</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,9 +14,23 @@
   <div class="app-container">
     <!-- Sidebar Navigation -->
     <div class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">XP</div>
-        <span class="brand-name">ExpTracker</span>
+      <div class="brand" style="display: flex; align-items: center; gap: 0.65rem;">
+        <div class="brand-icon" style="background: none; box-shadow: none; width: auto; height: auto;">
+          <svg viewBox="0 0 24 24" style="width: 34px; height: 34px; display: block;" fill="none" stroke="var(--logo-wallet-stroke)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <!-- Coin -->
+            <path d="M8 8a4 4 0 1 1 8 0z" fill="#fbbf24" stroke="#fbbf24" stroke-width="1" />
+            <!-- Wallet -->
+            <rect x="3" y="8" width="18" height="13" rx="2" fill="var(--bg-secondary)" />
+            <!-- Clasp -->
+            <path d="M16 11h4a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-4" fill="var(--bg-secondary)" />
+            <!-- Clasp button -->
+            <circle cx="18" cy="13.5" r="0.75" fill="var(--logo-wallet-stroke)" stroke="none" />
+          </svg>
+        </div>
+        <div style="display: flex; flex-direction: column; line-height: 1;">
+          <span class="brand-name" style="font-family: 'Orbitron', sans-serif; font-size: 1.35rem; font-weight: 900; letter-spacing: 0.5px; color: var(--logo-text-color); background: none; -webkit-text-fill-color: initial; text-shadow: none;">SP<span style="color: #fbbf24;">E</span>NDORA</span>
+          <span class="brand-slogan" style="font-size: 0.58rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.2px; margin-top: 0.15rem; font-family: var(--font-body);">Know your spending</span>
+        </div>
       </div>
       <ul class="nav-links">
         <li class="nav-item">
@@ -35,6 +49,12 @@
           <a href="categories.html" class="nav-link">
             <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             <span>Categories</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="recurring.html" class="nav-link">
+            <svg viewBox="0 0 24 24"><path d="M17 2.1l4 4-4 4M3 12a9 9 0 0115-6.7L21 8M7 21.9l-4-4 4-4M21 12a9 9 0 01-15 6.7L3 16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Recurring</span>
           </a>
         </li>
         <li class="nav-item">

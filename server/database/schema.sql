@@ -47,3 +47,24 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     performed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure budget column exists on categories table (for migrations)
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS budget NUMERIC(12, 2) DEFAULT 0.00;
+
+-- Create Recurring Transactions table
+CREATE TABLE IF NOT EXISTS recurring_transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    type VARCHAR(10) NOT NULL CHECK (type IN ('income', 'expense')),
+    notes TEXT,
+    frequency VARCHAR(20) NOT NULL CHECK (frequency IN ('weekly', 'monthly')),
+    start_date DATE NOT NULL,
+    next_due_date DATE NOT NULL,
+    last_processed_date DATE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
