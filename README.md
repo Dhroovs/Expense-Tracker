@@ -17,7 +17,7 @@ Exceeded budgets pulse dynamically in red with glowing shadows (`.overspent-puls
 ![Category Budgets Warning](docs/images/dashboard_budget.png)
 
 ### 3. Interactive Multi-Interval Spending Analytics
-Analyze historical expenses dynamically. Switch between day-wise, week-wise, month-wise, 6-months, and annual intervals instantly.
+Analyze historical expenses dynamically. Switch between day-wise, week-wise, month-wise, 6-months, and annual intervals instantly..
 ![Spending Analytics Week-Wise](docs/images/spending_weekly.png)
 ![Spending Analytics 6-Months](docs/images/spending_6months.png)
 
