@@ -9,7 +9,7 @@ Built with a dark-first design, fluid CSS micro-animations, a Node.js/Express ba
 ## 📸 Application Previews
 
 ### 1. Interactive Bento Grid Dashboard
-Sleek dashboard displaying overall balance summary, recent cash flows, and category budget statuses.
+Sleek dashboard displaying overall balance summary, recent cash flows, and category budget statuses..
 ![Bento Dashboard Overview](docs/images/dashboard_overview.png)
 
 ### 2. Overspending Glow Warnings & Progress Bars
