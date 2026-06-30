@@ -27,7 +27,7 @@ Create custom categories, set spending limits, and verify consumption rates with
 ![Category List Grid](docs/images/categories_view.png)
 
 ### 5. Profile Settings & Theme Synchronization
-Adjust budget limits and switch between dark and light themes, synchronized with your user profile in the database.
+Adjust budget limits and switch between dark and light themes, synchronized with your user profile in the database..
 ![Profile Settings and Themes](docs/images/profile_settings.png)
 
 ---
